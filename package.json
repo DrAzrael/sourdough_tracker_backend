@@ -1,0 +1,33 @@
+{
+  "name": "sourdough_tracker_backend",
+  "version": "1.0.0",
+  "description": "A backend for a webapp allowing to post and view diffrent stats of villages in the roblox game \"Breadwinner World\"",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsc && node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DrAzrael/sourdough_tracker_backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DrAzrael/sourdough_tracker_backend/issues"
+  },
+  "homepage": "https://github.com/DrAzrael/sourdough_tracker_backend#readme",
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/body-parser": "^1.19.5",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.15.3",
+    "typescript": "^5.8.3"
+  }
+}
