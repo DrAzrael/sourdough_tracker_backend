@@ -58,6 +58,10 @@ const client = new MongoClient(process.env.MONGODB_URI, {
 //     }
 // });
 
+app.get('/', async (req, res)=>{
+    res.status(200).send("works");
+});
+
 app.get('/info/:x/:y/all', async (req, res)=>{
     const db = client.db(process.env.DB_NAME);
     const village = await db.collection('info')
