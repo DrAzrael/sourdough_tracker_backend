@@ -4,6 +4,7 @@
   "description": "A backend for a webapp allowing to post and view diffrent stats of villages in the roblox game \"Breadwinner World\"",
   "main": "index.js",
   "scripts": {
+    "build": "tsc && npm prune --production",
     "start": "tsc && node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
