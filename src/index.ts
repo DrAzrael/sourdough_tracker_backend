@@ -62,22 +62,25 @@ app.get('/', async (req, res)=>{
     res.status(200).send("works");
 });
 
-app.get('/info/:x/:y/all', async (req, res)=>{
+app.get('/info/:x/:y/:type_id/all', async (req, res)=>{
     const db = client.db(process.env.DB_NAME);
     const village = await db.collection('info')
         .find({                          
             x: Number(req.params.x), 
-            y: Number(req.params.y) 
+            y: Number(req.params.y),
+            type_id: Number(req.params.type_id)
         }).sort({ date: -1 }).toArray();
     res.status(200).json(village);
 });
 
-app.get('/info/:x/:y', async (req, res)=>{
+app.get('/info/:x/:y/:type_id', async (req, res)=>{
     const db = client.db(process.env.DB_NAME);
     const village = await db.collection('info')
         .findOne({                          
             x: Number(req.params.x), 
-            y: Number(req.params.y) 
+            y: Number(req.params.y),
+            type_id: Number(req.params.type_id)
+
         }, {
             sort: { _id: -1 } 
         });
