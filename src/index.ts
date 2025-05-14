@@ -1,6 +1,9 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
@@ -21,6 +24,18 @@ const client = new MongoClient(process.env.MONGODB_URI, {
         deprecationErrors: true,
     }
 });
+
+app.get('/', async (req, res)=>{
+    res.status(200).send("works")
+})
+
+app.get('/login', async (req, res)=>{
+    res.status(200).send("works")
+})
+
+app.get('/register', async (req, res)=>{
+    res.status(200).send("works")
+})
 
 // app.get('/village/:x/:y', async (req, res) => {
 //     const db = client.db(process.env.DB_NAME);
@@ -58,46 +73,48 @@ const client = new MongoClient(process.env.MONGODB_URI, {
 //     }
 // });
 
-app.get('/', async (req, res)=>{
-    res.status(200).send("works");
-});
 
-app.get('/info/:x/:y/:type_id/all', async (req, res)=>{
-    const db = client.db(process.env.DB_NAME);
-    const village = await db.collection('info')
-        .find({                          
-            x: Number(req.params.x), 
-            y: Number(req.params.y),
-            type_id: Number(req.params.type_id)
-        }).sort({ date: -1 }).toArray();
-    res.status(200).json(village);
-});
 
-app.get('/info/:x/:y/:type_id', async (req, res)=>{
-    const db = client.db(process.env.DB_NAME);
-    const village = await db.collection('info')
-        .findOne({                          
-            x: Number(req.params.x), 
-            y: Number(req.params.y),
-            type_id: Number(req.params.type_id)
+// app.get('/', async (req, res)=>{
+//     res.status(200).send("works");
+// });
 
-        }, {
-            sort: { _id: -1 } 
-        });
-    res.status(200).json(village);
-});
+// app.get('/info/:x/:y/:type_id/all', async (req, res)=>{
+//     const db = client.db(process.env.DB_NAME);
+//     const village = await db.collection('info')
+//         .find({                          
+//             x: Number(req.params.x), 
+//             y: Number(req.params.y),
+//             type_id: Number(req.params.type_id)
+//         }).sort({ date: -1 }).toArray();
+//     res.status(200).json(village);
+// });
 
-app.post('/info', async (req, res) => {
-    const db = client.db(process.env.DB_NAME);
-    await db.collection('info').insertOne({
-        x: Number(req.body.x),
-        y: Number(req.body.y),
-        type_id: Number(req.body.type_id),
-        value: Number(req.body.value),
-        edit_date: Date.now()
-    });
-    res.status(200).send('info added');
-});
+// app.get('/info/:x/:y/:type_id', async (req, res)=>{
+//     const db = client.db(process.env.DB_NAME);
+//     const village = await db.collection('info')
+//         .findOne({                          
+//             x: Number(req.params.x), 
+//             y: Number(req.params.y),
+//             type_id: Number(req.params.type_id)
+
+//         }, {
+//             sort: { _id: -1 } 
+//         });
+//     res.status(200).json(village);
+// });
+
+// app.post('/info', async (req, res) => {
+//     const db = client.db(process.env.DB_NAME);
+//     await db.collection('info').insertOne({
+//         x: Number(req.body.x),
+//         y: Number(req.body.y),
+//         type_id: Number(req.body.type_id),
+//         value: Number(req.body.value),
+//         edit_date: Date.now()
+//     });
+//     res.status(200).send('info added');
+// });
 
 app.listen(3000, ()=>{
     console.log("Expres server started on port 3000");
