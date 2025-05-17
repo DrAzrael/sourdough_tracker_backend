@@ -1,4 +1,4 @@
-import { ObjectId, WithId } from 'mongodb';
+import type { ObjectId, WithId } from "mongodb"
 
 // export interface Village {
 //     x: number;
@@ -20,11 +20,12 @@ import { ObjectId, WithId } from 'mongodb';
 // }
 
 export interface UserSchema {
-  _id: ObjectId;
-  login: string;
-  pass: string;
-  roblox_username: string;
-  user_state: number;
+  _id: ObjectId
+  login: string
+  pass: string
+  roblox_username: string
+  user_state: number
+  refreshToken?: string | null
 }
 
-export type User = WithId<Document> & UserSchema;
+export type User = WithId<Document> & UserSchema
