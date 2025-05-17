@@ -27,4 +27,20 @@ export interface UserSchema {
   user_state: number;
 }
 
+export interface RegisterRequest {
+    username: string;
+    login: string;
+    password: string;
+}
+
+export interface LoginRequest {
+    login: string;
+    password: string;
+}
+
 export type User = WithId<Document> & UserSchema;
+
+export interface JwtPayload {
+    login: string;
+    // Add other fields if needed (e.g., userId, role)
+}
