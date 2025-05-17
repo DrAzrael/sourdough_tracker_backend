@@ -1,7 +1,6 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
 import express from "express";
@@ -9,9 +8,8 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import { MongoClient, ServerApiVersion, Db } from 'mongodb';
 
-import { Village } from "./item.model";
-
-console.log("MONGODB_URI:", process.env.MONGODB_URI);
+import { User } from "./item.model";
+import { checkToken, genToken } from "./auth";
 
 const app = express();
 app.use(cors());
@@ -29,12 +27,42 @@ app.get('/', async (req, res)=>{
     res.status(200).send("works")
 })
 
-app.get('/login', async (req, res)=>{
-    res.status(200).send("works")
+app.post('/login', async (req, res)=>{
+    const { login, password } = req.body;
+    const db = client.db(process.env.DB_NAME);
+    
+    const user = await db.collection('users')
+    .findOne<User>({ 
+        login: String(login),
+    });
+
+    if (user){
+        const passwordMatch = bcrypt.compareSync(password, user.pass);
+        if (!passwordMatch) {
+            res.status(401).json({ message: "Invalid credentials." });
+        }
+        else {
+            const token = genToken(user)
+            res.status(200).json({ message: "Login successful.", token: token });
+        }
+    }
+    else{
+        res.status(404).json({ message: "user not found" });
+    }
 })
 
-app.get('/register', async (req, res)=>{
-    res.status(200).send("works")
+app.post('/register', async (req, res)=>{
+    const { username, login, password } = req.body;
+    const  hashedPassword = bcrypt.hashSync(password, 10);
+    const db = client.db(process.env.DB_NAME);
+    await db.collection('users').insertOne({
+                login: String(login),
+                pass: String(hashedPassword),
+                roblox_username: String(username),
+                user_state: Number(1)
+            });
+    
+    res.status(201).json({ message: "User created." });
 })
 
 // app.get('/village/:x/:y', async (req, res) => {
