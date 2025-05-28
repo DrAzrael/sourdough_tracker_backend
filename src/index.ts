@@ -5,9 +5,10 @@ import bcrypt from 'bcryptjs';
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import { MongoClient, ServerApiVersion } from 'mongodb';
+import { MongoClient, ObjectId, ServerApiVersion } from 'mongodb';
 import { User, RegisterRequest, LoginRequest } from "./item.model";
 import { checkToken, genToken } from "./auth";
+import axios from 'axios';
 
 const app = express();
 app.use(cors());
@@ -21,7 +22,7 @@ const client = new MongoClient(process.env.MONGODB_URI!, {
     }
 });
 
-// Health check endpoint
+
 app.get('/', async (req, res) => {
     res.status(200).send("Server is running");
 });
@@ -62,31 +63,62 @@ app.post('/login', async (req, res) => {
 
         
     } catch (error) {
-        console.error("Login error:", error);
-        res.status(500).json({ message: "Internal server error." });
-    }
-});
+            console.error("Login error:", error);
+            res.status(500).json({ message: "Internal server error." });
+        }
+    });
 
-app.post('/register', async (req, res) => {
-    try {
-        const { username, login, password }: RegisterRequest = req.body;
+    app.post('/register', async (req, res) => {
+        try {
+            const { username, login, password }: RegisterRequest = req.body;
         
         if (username && login && password) {
-            const db = client.db(process.env.DB_NAME!);
-            const existingUser = await db.collection('users').findOne({ login });
-            
-            if (!existingUser) {
-                const hashedPassword = await bcrypt.hash(password, 10);
-                await db.collection('users').insertOne({
-                    login,
-                    pass: hashedPassword,
-                    roblox_username: username,
-                    user_state: 1
-                });
-                res.status(201).json({ message: "User created successfully." });
-            }
-            else{
-                res.status(409).json({ message: "User already exists." });
+            try {
+
+                const response = await axios.post(
+                    'https://users.roblox.com/v1/usernames/users',
+                    { "usernames": [username] }
+                );
+                const data = response.data.data;
+                if (data.length == 0){
+                    res.status(404).json({ message: "Roblox user not found" });
+                }
+                else if (data.length != 0) {
+                    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (regex.test(login)){
+                        const db = client.db(process.env.DB_NAME!);
+                        const existingUser = await db.collection('users').findOne({
+                            $or: [
+                                { login: login },
+                                { roblox_username: username } 
+                            ]
+                        });
+                        
+                        if (!existingUser) {
+                            const hashedPassword = await bcrypt.hash(password, 10);
+                            await db.collection('users').insertOne({
+                                login,
+                                pass: hashedPassword,
+                                roblox_username: username,
+                                user_state: new ObjectId('683568f18ca8e061bce38346')
+                            });
+                            res.status(201).json({ message: "User created successfully." });
+                        }
+                        else{
+                            res.status(409).json({ message: "User already exists." });
+                        }
+                    }
+                    else{
+                        res.status(400).json({ message: "Incorrect email." });
+                    }
+                }
+                else{
+                    res.status(500).json({ message: "Internal server error." });
+                }
+            }catch (error)
+            {
+                console.error("Registration error:", error);
+                res.status(500).json({ message: "Internal server error." });
             }
         }
         else{
@@ -115,11 +147,29 @@ app.get('/protected', checkToken, (req, res) => {
     });
 });
 
+//data gets
+app.get('/villages', async (req, res) => {
+    res.status(200).send("list of stats of all village");
+
+});
+
+app.get('/village_stats', async (req, res) => {
+    res.status(200).send("list of stats of a specyfic village");
+});
+
+app.get('/stat_hisotry', async (req, res) => {
+    res.status(200).send("all updates of a specyfic stat for a specyfic village");
+});
+
+
+
+
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error(err.stack);
     res.status(500).json({ message: "Something went wrong!" });
 });
+
 
 // Start server
 const PORT = process.env.PORT || 3000;
