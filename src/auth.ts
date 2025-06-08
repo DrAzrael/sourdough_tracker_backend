@@ -50,7 +50,7 @@ export function genToken(user: User): string {
 
 export function checkToken(req: Request, res: Response, next: NextFunction) {
     const authHeader = req.headers.authorization;
-    const token = authHeader?.split(' ')[1]; // Extract token from "Bearer <token>"
+    const token = authHeader?.split(' ')[1];
 
     if (token) {
         if (!process.env.SECRET) {
@@ -75,5 +75,29 @@ export function checkToken(req: Request, res: Response, next: NextFunction) {
       res.status(401).json({ message: "No token provided." });
     }
     
-    
 }
+
+// export function userFromToken(req: Request, res: Response, next: NextFunction){
+//     const authHeader = req.headers.authorization;
+//     const token = authHeader?.split(' ')[1];
+
+//     if (!token) {
+//         res.status(401).json({ message: 'No token provided' });
+//     }
+//     else{
+//         jwt.verify(token, process.env.SECRET, (err, decoded)=> {
+//             if (err) {
+//                 res.status(401).json({ message: "Invalid token." });
+//             }
+
+//             // Type guard to ensure decoded matches JwtPayload
+//             if (decoded && typeof decoded === 'object' && 'login' in decoded) {
+//                 req.user = (decoded as JwtPayload).login; // Assign login to req.user
+//                 next();
+//             } else {
+//                 res.status(401).json({ message: "Malformed token payload." });
+//             }
+//         })
+//     }
+    
+// }
