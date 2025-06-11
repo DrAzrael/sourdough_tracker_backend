@@ -8,10 +8,10 @@ import cors from "cors";
 import { MongoClient, ObjectId, ServerApiVersion } from 'mongodb';
 import { User, VillageStat, Village, VillageStatType, UserSchema, UserState } from "./item.model";
 import { checkToken, genToken } from "./auth";
-import { assignStatTypes, getLatestStatsByType, getLatestVillages } from "./functions";
+import { assignStatTypes, getLatestStatsByType } from "./functions";
 import axios from 'axios';
-import { z } from 'zod';
-import { LoginRequestSchema, RegisterRequestSchema, VillagePostSchema, VillageRequestSchema, VillageStatHistoryRequestSchema, VillageStatsRequestSchema } from "./zod-schemas";
+import { date, z } from 'zod';
+import { LoginRequestSchema, RegisterRequestSchema, VillageDeleteSchema, VillagePostSchema, VillagePutSchema, VillageGetSchema, VillageStatsGetSchema, VillageStatHistoryGetSchema, VIllageStatPostSchema, VillageStatPutSchema, VillageStatDeleteSchema } from "./zod-schemas";
 
 const app = express();
 app.use(cors());
@@ -142,25 +142,24 @@ app.get('/verify-token', checkToken, (req, res) => {
 // village==================
 app.get('/village', async (req, res) => {
     try {
-        const validationResult = VillageRequestSchema.safeParse(req.body);
+        const validationResult = VillageGetSchema.safeParse(req.body);
         if (validationResult.success) {
             const {x, y} = validationResult.data;
             const db = client.db(process.env.DB_NAME!);
             
-            const stat_history = await db.collection<VillageStat>('village_stats')
-            .find({
+            const village = await db.collection<Village>('villages')
+            .findOne({
                 x: x,
                 y: y
             })
-            .sort({ report_date_time: 1 }) 
-            .toArray(); 
+            if (village){
+                res.status(200).json({ village: village });
+            }
+            else{
+                res.status(404).json({ message: "Village not found." });
+            }
 
-            const stat_types = await db.collection<VillageStatType>('stat_types')
-            .find({})
-            .toArray();
-            const assigned_stats = assignStatTypes(stat_history, stat_types);
 
-            res.status(200).json({ stats: assigned_stats });
         }
         else{
 
@@ -176,16 +175,13 @@ app.get('/village', async (req, res) => {
     }
 });
 
-
-
 app.get('/villages', async (req, res) => {
     try {
         const db = client.db(process.env.DB_NAME!);
 
         const villages = await db.collection<Village>('villages').find({}).toArray()
-        
-        const fresh_data = getLatestVillages(villages)
-        res.status(200).json({ villages: fresh_data });
+
+        res.status(200).json({ villages: villages });
 
     }catch(error){
         console.error("Village data retival", error);
@@ -202,19 +198,17 @@ app.post('/villages', checkToken, async (req, res) => {
             const db = client.db(process.env.DB_NAME!);
             
             const village = await db.collection<Village>('villages')
-                .find({
+                .findOne({
                     x: x,
                     y: y
                 })
-                .sort({ edit_datetime: -1 })
-                .toArray()
-            if (!village[0]){
+            if (!village){
                 const user = await db.collection<UserSchema>('users').findOne({
                     login: req.user
                 })
                 if (user){
-                    const user_state = await db.collection<UserState>('users').findOne({
-                        _id: new ObjectId(user.user_state)
+                    const user_state = await db.collection<UserState>('user_stats').findOne({
+                        _id: new ObjectId(user.user_state.toString())
                     })
 
                     if (user_state){
@@ -224,9 +218,7 @@ app.post('/villages', checkToken, async (req, res) => {
                                 mayor: mayor,
                                 name: name,
                                 x: x,
-                                y: y,
-                                editor_id: new ObjectId(user._id),
-                                edit_datetime: new Date()
+                                y: y
                             }
                             await db.collection<Village>('villages').insertOne(newVillage);
                             
@@ -256,23 +248,141 @@ app.post('/villages', checkToken, async (req, res) => {
             res.status(500).json({ message: "Internal server error" });
         }
     }
+    else{
+
+        res.status(400).json({ 
+            message: "Validation error",
+            errors: validationResult.error.errors 
+        });
+    }
 });
 
 
 app.put('/villages', checkToken, async (req, res) => {
-    
+    const validationResult = VillagePutSchema.safeParse(req.body);
+    if (validationResult.success) {
+        const { x, y, mayor, name } = validationResult.data;
+        try {
+            const db = client.db(process.env.DB_NAME!);
+            
+            // Check if village exists
+            const village = await db.collection<Village>('villages').findOne({
+                x: x,
+                y: y
+            });
+            
+            if (village) {
+                // Check user permissions
+                const user = await db.collection<UserSchema>('users').findOne({
+                    login: req.user
+                });
+                
+                if (user) {
+                    const user_state = await db.collection<UserState>('users').findOne({
+                        _id: new ObjectId(user.user_state)
+                    });
+
+                    if (user_state) {
+                        if (user_state.clearance_level >= 1) {
+                            // Prepare update object with only provided fields
+                            const updateData: Partial<Village> = {};
+                            if (mayor !== undefined) updateData.mayor = mayor;
+                            if (name !== undefined) updateData.name = name;
+                            
+                            // Update the village
+                            await db.collection<Village>('villages').updateOne(
+                                { _id: village._id },
+                                { $set: updateData }
+                            );
+                            
+                            res.status(200).json({ message: "Village updated successfully." });
+                        } else {
+                            res.status(403).json({ message: "Insufficient clearance level." });
+                        }
+                    } else {
+                        res.status(500).json({ message: "Corrupted user data." });
+                    }
+                } else {
+                    res.status(404).json({ message: "User not found." });
+                }
+            } else {
+                res.status(404).json({ message: "Village not found." });
+            }
+        } catch (error) {
+            console.error("Village update error", error);
+            res.status(500).json({ message: "Internal server error" });
+        }
+    } else {
+        res.status(400).json({ 
+            message: "Validation error",
+            errors: validationResult.error.errors 
+        });
+    }
 });
 
 
 app.delete('/villages', checkToken, async (req, res) => {
+    const validationResult = VillageDeleteSchema.safeParse(req.body);
+    if(validationResult.success){
+        const {x, y} = validationResult.data;
+        try {
+            const db = client.db(process.env.DB_NAME!);
+            
+            // Check if village exists
+            const village = await db.collection<Village>('villages').findOne({
+                x: x,
+                y: y
+            });
+            
+            if (village) {
+                // Check user permissions
+                const user = await db.collection<UserSchema>('users').findOne({
+                    login: req.user
+                });
+                
+                if (user) {
+                    const user_state = await db.collection<UserState>('users').findOne({
+                        _id: new ObjectId(user.user_state)
+                    });
 
+                    if (user_state) {
+                        if (user_state.clearance_level >= 1) {
+                            // Delete the village
+                            await db.collection<Village>('villages').deleteOne({
+                                _id: village._id
+                            });
+                            
+                            res.status(200).json({ message: "Village deleted successfully." });
+                        } else {
+                            res.status(403).json({ message: "Insufficient clearance level." });
+                        }
+                    } else {
+                        res.status(500).json({ message: "Corrupted user data." });
+                    }
+                } else {
+                    res.status(404).json({ message: "User not found." });
+                }
+            } else {
+                res.status(404).json({ message: "Village not found." });
+            }
+        } catch (error) {
+            console.error("Village deletion error", error);
+            res.status(500).json({ message: "Internal server error" });
+        }
+    }
+    else{
+        res.status(400).json({ 
+            message: "Validation error",
+            errors: validationResult.error.errors 
+        });
+    }
 });
 
 // stats=======================
 
 app.get('/stat_history', async (req, res) => {
     try {
-        const validationResult = VillageStatHistoryRequestSchema.safeParse(req.body);
+        const validationResult = VillageStatHistoryGetSchema.safeParse(req.body);
         if (validationResult.success) {
             const {village_id, stat_type_id} = validationResult.data;
             const db = client.db(process.env.DB_NAME!);
@@ -311,7 +421,7 @@ app.get('/stat_history', async (req, res) => {
 
 app.get('/village_stats', async (req, res) => {
     try {
-        const validationResult = VillageStatsRequestSchema.safeParse(req.body);
+        const validationResult = VillageStatsGetSchema.safeParse(req.body);
         if (validationResult.success){
             const {village_id} = validationResult.data;
             const db = client.db(process.env.DB_NAME!);
@@ -346,16 +456,203 @@ app.get('/village_stats', async (req, res) => {
 
 
 app.post('/village_stats', checkToken, async (req, res) => {
+    const validationResult = VIllageStatPostSchema.safeParse(req.body);
+    if(validationResult.success){
+        const {stat_type_id, village_id, value} = validationResult.data;
+        try{
+            const db = client.db(process.env.DB_NAME!);
+            const village = await db.collection<Village>('villages').findOne({
+                _id: new ObjectId(village_id)
+            });
+            
+            if (village) {
+                // Check user permissions
+                const user = await db.collection<UserSchema>('users').findOne({
+                    login: req.user
+                });
+                
+                if (user) {
+                    const user_state = await db.collection<UserState>('users').findOne({
+                        _id: new ObjectId(user.user_state)
+                    });
+
+                    if (user_state) {
+                        if (user_state.clearance_level >= 1) {
+                            const stat_type = await db.collection<VillageStatType>('stat_types').findOne({
+                                _id: new ObjectId(stat_type_id)
+                            });
+                            if(stat_type){
+                                const newVillageStat: VillageStat = {
+                                    _id: new ObjectId,
+                                    stat_type_id: new ObjectId(stat_type_id),
+                                    village_id:  new ObjectId(village_id),
+                                    reporter_id: new ObjectId(user._id),
+                                    report_date_time: new Date(),
+                                    value: value
+                                }
+                                
+                                res.status(200).json({ message: "Village stat added successfully." });
+                            }else{
+                                res.status(404).json({ message: "Stat type not found." });
+                            }
+                        } else {
+                            res.status(403).json({ message: "Insufficient clearance level." });
+                        }
+                    } else {
+                        res.status(500).json({ message: "Corrupted user data." });
+                    }
+                } else {
+                    res.status(404).json({ message: "User not found." });
+                }
+            } else {
+                res.status(404).json({ message: "Village not found." });
+            }
+
+        }catch(error){
+            console.error("Village stat data append", error);
+            res.status(500).json({ message: "Internal server error" });
+        }
+    }
+    else{
+
+        res.status(400).json({ 
+            message: "Validation error",
+            errors: validationResult.error.errors 
+        });
+    }
 });
 
 
 app.put('/village_stats', checkToken, async (req, res) => {
+    const validationResult = VillageStatPutSchema.safeParse(req.body);
+    if(validationResult.success){
+        const {_id, stat_type_id, village_id, value} = validationResult.data;
+        try{
+            const db = client.db(process.env.DB_NAME!);
+            
+            const existingStat = await db.collection<VillageStat>('village_stats').findOne({
+                _id: new ObjectId(_id)
+            });
+            
+            if (existingStat){
+                const user = await db.collection<UserSchema>('users').findOne({
+                    login: req.user
+                });
+                
+                if (user){
+                    const user_state = await db.collection<UserState>('users').findOne({
+                        _id: new ObjectId(user.user_state)
+                    });
 
+                    if (user_state){
+                        const isOriginalReporter = existingStat.reporter_id.equals(user._id);
+                        const hasHighClearance = user_state.clearance_level >= 2;
+                        
+                        if (isOriginalReporter || hasHighClearance){
+                            const updateData: Partial<VillageStat> = {};
+                            if (stat_type_id) updateData.stat_type_id = new ObjectId(stat_type_id);
+                            if (village_id) updateData.village_id = new ObjectId(village_id);
+                            if (value) updateData.value = value;
+                            updateData.report_date_time = new Date();
+
+                            await db.collection<VillageStat>('village_stats').updateOne(
+                                { _id: existingStat._id },
+                                { $set: updateData }
+                            );
+                            
+                            res.status(200).json({ message: "Village stat updated."});
+                        }
+                        else{
+                            res.status(403).json({ message: "Not original reporter or insufficient clearance."});
+                        }
+                    }
+                    else{
+                        res.status(500).json({ message: "Corrupted user data."});
+                    }
+                }
+                else{
+                    res.status(404).json({ message: "User not found."});
+                }
+            }
+            else{
+                res.status(404).json({ message: "Village stat not found."});
+            }
+            
+
+        }catch(error){
+            console.error("Village stat update", error);
+            res.status(500).json({ message: "Internal server error" });
+        }
+    }
+    else{
+        res.status(400).json({ 
+            message: "Validation error",
+            errors: validationResult.error.errors 
+        });
+    }
 });
 
-
+//deletes only a single entry
 app.delete('/village_stats', checkToken, async (req, res) => {
+    const validationResult = VillageStatDeleteSchema.safeParse(req.body);
+    if(validationResult.success){
+        const {_id} = validationResult.data;
+        try{
+            const db = client.db(process.env.DB_NAME!);
+            
+            const villageStat = await db.collection<VillageStat>('village_stats').findOne({
+                _id: new ObjectId(_id)
+            });
+            
+            if (villageStat){
+                const user = await db.collection<UserSchema>('users').findOne({
+                    login: req.user
+                });
+                
+                if (user){
+                    const user_state = await db.collection<UserState>('users').findOne({
+                        _id: new ObjectId(user.user_state)
+                    });
 
+                    if (user_state){
+                        const isOriginalReporter = villageStat.reporter_id.equals(user._id);
+                        const hasHighClearance = user_state.clearance_level >= 2;
+                        
+                        if (isOriginalReporter || hasHighClearance){
+                            await db.collection<VillageStat>('village_stats').deleteOne({
+                                _id: villageStat._id
+                            });
+                            
+                            res.status(200).json({ message: "Village stat deleted."});
+                        }
+                        else{
+                            res.status(403).json({ message: "Not original reporter or insufficient clearance."});
+                        }
+                    }
+                    else{
+                        res.status(500).json({ message: "Corrupted user data."});
+                    }
+                }
+                else{
+                    res.status(404).json({ message: "User not found."});
+                }
+            }
+            else{
+                res.status(404).json({ message: "Village stat not found."});
+            }
+            
+
+        }catch(error){
+            console.error("Village stat deletion", error);
+            res.status(500).json({ message: "Internal server error" });
+        }
+    }
+    else{
+        res.status(400).json({ 
+            message: "Validation error",
+            errors: validationResult.error.errors 
+        });
+    }
 });
 
 

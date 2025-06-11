@@ -96,8 +96,6 @@ export interface Village {
     name: string;
     x: number;
     y: number;
-    editor_id: ObjectId;
-    edit_datetime: Date;
 }
 
 

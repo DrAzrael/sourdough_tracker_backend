@@ -21,23 +21,6 @@ export function getLatestStatsByType(stats: VillageStat[]): VillageStat[] {
   return Array.from(latestStatsMap.values());
 }
 
-export function getLatestVillages(villages: Village[]): Village[] {
-  const latestVillagesMap = new Map<string, Village>();
-
-  villages.forEach(village => {
-    const currentDate = village.edit_datetime;
-    const locationKey = `${village.x},${village.y}`; // Create a key from x and y coordinates
-    
-    const existingVillage = latestVillagesMap.get(locationKey);
-
-    if (!existingVillage || existingVillage.edit_datetime < currentDate) {
-      latestVillagesMap.set(locationKey, village);
-    }
-  });
-
-  return Array.from(latestVillagesMap.values());
-}
-
 export function assignStatTypes(villageStats: VillageStat[], statTypes: VillageStatType[]): VillageStatAssigned[] {
     const statTypeMap = new Map<string, string>();
     statTypes.forEach(statType => {
