@@ -48,7 +48,7 @@ app.post('/login', async (req, res) => {
                 const passwordMatch = await bcrypt.compare(password, user.pass);
                 if (passwordMatch) {
                     const token = genToken(user);
-                    res.cookie('jwt_token', token, {maxAge: 30*24*60*60, sameSite: 'none'})
+                    res.cookie('jwt_token', token, {maxAge: 30*24*60*60, sameSite: 'none', secure: true})
                     res.status(200).json({ 
                         message: "Login successful.", 
                         user: {
