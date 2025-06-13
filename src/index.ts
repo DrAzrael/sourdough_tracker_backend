@@ -4,7 +4,7 @@ dotenv.config();
 import bcrypt from 'bcryptjs';
 import express from "express";
 import bodyParser from "body-parser";
-import cors from "cors";
+import cors, { CorsOptions } from "cors";
 import { MongoClient, ObjectId, ServerApiVersion } from 'mongodb';
 import { User, VillageStat, Village, VillageStatType, UserSchema, UserState } from "./item.model";
 import { checkToken, genToken } from "./auth";
@@ -14,7 +14,11 @@ import { date, z } from 'zod';
 import { LoginRequestSchema, RegisterRequestSchema, VillageDeleteSchema, VillagePostSchema, VillagePutSchema, VillageGetSchema, VillageStatsGetSchema, VillageStatHistoryGetSchema, VIllageStatPostSchema, VillageStatPutSchema, VillageStatDeleteSchema } from "./zod-schemas";
 import cookieParser from 'cookie-parser';
 const app = express();
-app.use(cors({origin: ['http://localhost:5173/', 'https://sourdoughtracker.vercel.app/']}));
+const corsOptions: CorsOptions = {
+    origin: ['http://localhost:5173/', 'https://sourdoughtracker.vercel.app/'],
+    credentials: true
+}
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(cookieParser())
 
