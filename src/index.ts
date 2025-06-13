@@ -15,7 +15,7 @@ import { LoginRequestSchema, RegisterRequestSchema, VillageDeleteSchema, Village
 import cookieParser from 'cookie-parser';
 const app = express();
 const corsOptions: CorsOptions = {
-    origin: ['http://localhost:5173/', 'https://sourdoughtracker.vercel.app/'],
+    origin: ['http://localhost:5173', 'https://sourdoughtracker.vercel.app'],
     credentials: true
 }
 app.use(cors(corsOptions));
