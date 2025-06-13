@@ -12,10 +12,11 @@ import { assignStatTypes, getLatestStatsByType } from "./functions";
 import axios from 'axios';
 import { date, z } from 'zod';
 import { LoginRequestSchema, RegisterRequestSchema, VillageDeleteSchema, VillagePostSchema, VillagePutSchema, VillageGetSchema, VillageStatsGetSchema, VillageStatHistoryGetSchema, VIllageStatPostSchema, VillageStatPutSchema, VillageStatDeleteSchema } from "./zod-schemas";
-
+import cookieParser from 'cookie-parser';
 const app = express();
 app.use(cors({origin: '*'}));
 app.use(bodyParser.json());
+app.use(cookieParser())
 
 const client = new MongoClient(process.env.MONGODB_URI!, {
     serverApi: {
@@ -43,9 +44,9 @@ app.post('/login', async (req, res) => {
                 const passwordMatch = await bcrypt.compare(password, user.pass);
                 if (passwordMatch) {
                     const token = genToken(user);
+                    res.cookie('jwt_token', token, {maxAge: 30*24*60*60})
                     res.status(200).json({ 
                         message: "Login successful.", 
-                        token,
                         user: {
                             login: user.login,
                             roblox_username: user.roblox_username

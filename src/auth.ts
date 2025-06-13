@@ -49,15 +49,14 @@ export function genToken(user: User): string {
 }
 
 export function checkToken(req: Request, res: Response, next: NextFunction) {
-    const authHeader = req.headers.authorization;
-    const token = authHeader?.split(' ')[1];
+    const token = req.cookies.jwt_token;
 
     if (token) {
         if (!process.env.SECRET) {
         res.status(500).json({ message: "Server misconfiguration." });
         }
 
-        jwt.verify(token, process.env.SECRET, (err, decoded) => {
+        jwt.verify(token, process.env.SECRET, (err: unknown, decoded: unknown) => {
             if (err) {
                 res.status(401).json({ message: "Invalid token." });
             }
