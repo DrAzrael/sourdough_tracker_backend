@@ -14,7 +14,7 @@ import { date, z } from 'zod';
 import { LoginRequestSchema, RegisterRequestSchema, VillageDeleteSchema, VillagePostSchema, VillagePutSchema, VillageGetSchema, VillageStatsGetSchema, VillageStatHistoryGetSchema, VIllageStatPostSchema, VillageStatPutSchema, VillageStatDeleteSchema } from "./zod-schemas";
 
 const app = express();
-app.use(cors());
+app.use(cors({origin: '*'}));
 app.use(bodyParser.json());
 
 const client = new MongoClient(process.env.MONGODB_URI!, {
