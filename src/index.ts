@@ -15,8 +15,10 @@ import { LoginRequestSchema, RegisterRequestSchema, VillageDeleteSchema, Village
 
 const app = express();
 const corsOptions = {
-  origin: 'http://localhost:5173',
-  credentials: true
+  origin: process.env.ORIGIN,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 app.use(cors(corsOptions));
 
@@ -31,9 +33,6 @@ const client = new MongoClient(process.env.MONGODB_URI!, {
         deprecationErrors: true,
     }
 });
-
-// Apply CORS middleware
-app.use(cors(corsOptions));
 
 // Handle preflight requests (OPTIONS)
 app.options('*', cors(corsOptions)); // Enable preflight for all routes
@@ -56,6 +55,8 @@ app.post('/login', async (req, res) => {
                 const passwordMatch = await bcrypt.compare(password, user.pass);
                 if (passwordMatch) {
                     const token = genToken(user);
+                    res.header('Access-Control-Allow-Origin', process.env.ORIGIN);
+                    res.header('Access-Control-Allow-Credentials', 'true');
                     res.status(200).json({ 
                         message: "Login successful.", 
                         token,
