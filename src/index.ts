@@ -48,7 +48,7 @@ app.post('/login', async (req, res) => {
                 const passwordMatch = await bcrypt.compare(password, user.pass);
                 if (passwordMatch) {
                     const token = genToken(user);
-                    res.cookie('jwt_token', token, {maxAge: 30*24*60*60, sameSite: 'none', secure: true, httpOnly: true})
+                    res.cookie('jwt_token', token, {maxAge: 30*24*60*60*1000, sameSite: 'none', secure: true, httpOnly: true})
                     res.status(200).json({ 
                         message: "Login successful.", 
                         user: {
@@ -56,7 +56,7 @@ app.post('/login', async (req, res) => {
                             roblox_username: user.roblox_username
                         }
                     });
-
+                    
                 }
                 else{
                     res.status(401).json({ message: "Invalid credentials." });
