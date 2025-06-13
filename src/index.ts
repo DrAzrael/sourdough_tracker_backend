@@ -12,10 +12,10 @@ import { assignStatTypes, getLatestStatsByType } from "./functions";
 import axios from 'axios';
 import { date, z } from 'zod';
 import { LoginRequestSchema, RegisterRequestSchema, VillageDeleteSchema, VillagePostSchema, VillagePutSchema, VillageGetSchema, VillageStatsGetSchema, VillageStatHistoryGetSchema, VIllageStatPostSchema, VillageStatPutSchema, VillageStatDeleteSchema } from "./zod-schemas";
-
+const rozpierdoli_mnie = 'http://localhost:5173'
 const app = express();
 const corsOptions = {
-  origin: process.env.ORIGIN,
+  origin: rozpierdoli_mnie,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -55,7 +55,7 @@ app.post('/login', async (req, res) => {
                 const passwordMatch = await bcrypt.compare(password, user.pass);
                 if (passwordMatch) {
                     const token = genToken(user);
-                    res.header('Access-Control-Allow-Origin', process.env.ORIGIN);
+                    res.header('Access-Control-Allow-Origin', rozpierdoli_mnie);
                     res.header('Access-Control-Allow-Credentials', 'true');
                     res.status(200).json({ 
                         message: "Login successful.", 
