@@ -14,14 +14,7 @@ import { date, z } from 'zod';
 import { LoginRequestSchema, RegisterRequestSchema, VillageDeleteSchema, VillagePostSchema, VillagePutSchema, VillageGetSchema, VillageStatsGetSchema, VillageStatHistoryGetSchema, VIllageStatPostSchema, VillageStatPutSchema, VillageStatDeleteSchema } from "./zod-schemas";
 
 const app = express();
-const corsOptions = {
-  origin: 'http://localhost:5173',
-  credentials: true
-};
-app.use(cors(corsOptions));
-
-
-
+app.use(cors());
 app.use(bodyParser.json());
 
 const client = new MongoClient(process.env.MONGODB_URI!, {
@@ -31,9 +24,6 @@ const client = new MongoClient(process.env.MONGODB_URI!, {
         deprecationErrors: true,
     }
 });
-
-// Handle preflight requests (OPTIONS)
-app.options('*', cors(corsOptions)); // Enable preflight for all routes
 
 
 app.get('/', async (req, res) => {
