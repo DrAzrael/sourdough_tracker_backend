@@ -14,7 +14,7 @@ import { date, z } from 'zod';
 import { LoginRequestSchema, RegisterRequestSchema, VillageDeleteSchema, VillagePostSchema, VillagePutSchema, VillageGetSchema, VillageStatsGetSchema, VillageStatHistoryGetSchema, VIllageStatPostSchema, VillageStatPutSchema, VillageStatDeleteSchema } from "./zod-schemas";
 import cookieParser from 'cookie-parser';
 const app = express();
-app.use(cors({origin: '*'}));
+app.use(cors({origin: ['http://localhost:5173/', 'https://sourdoughtracker.vercel.app/']}));
 app.use(bodyParser.json());
 app.use(cookieParser())
 
